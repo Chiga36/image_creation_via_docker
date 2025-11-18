@@ -693,6 +693,69 @@ async def cleanup_task():
             logger.error(f"Error in cleanup task: {e}")
             await asyncio.sleep(60)
 
+
+async def run_startup_test():
+    """Run a test generation after server startup - non-blocking"""
+    try:
+        await asyncio.sleep(5)  # Wait for server to be fully ready
+
+        test_prompt = "A majestic black panther standing on a rocky cliff edge in a heroic brave position, muscles tensed, piercing golden eyes staring intensely forward, wind blowing through its sleek black fur, dramatic cloudy sky background, cinematic lighting, photorealistic, 8k quality"
+
+        print("=" * 70)
+        print("RUNNING HUNYUAN TEST GENERATION")
+        print("=" * 70)
+        print(f"Test Prompt: {test_prompt[:80]}...")
+        print(f"Output Directory: {OUTPUT_DIR}")
+
+        # Create test request
+        test_request = ImageGenerationRequest(
+            prompt=test_prompt,
+            width=1024,
+            height=1024,
+            steps=20,
+            seed=42,
+            apikey="masterkey123"
+        )
+
+        # Generate job ID
+        job_id = f"test_{int(time.time())}"
+
+        # Create job entry and add to queue
+        with job_lock:
+            active_jobs[job_id] = {
+                "job_id": job_id,
+                "status": JobStatus.QUEUED,
+                "request": test_request,
+                "created_at": datetime.now(),
+                "message": "Test generation"
+            }
+            job_queue.append({"job_id": job_id, "request": test_request})
+
+        print("Generating test output...")
+
+        # Wait for completion (max 5 minutes)
+        for _ in range(150):  # 150 * 2 = 300 seconds
+            await asyncio.sleep(2)
+            with job_lock:
+                if job_id in active_jobs:
+                    job = active_jobs[job_id]
+                    if job["status"] == JobStatus.COMPLETED:
+                        print(f"✓ Test generation completed: {job.get('output_filename')}")
+                        print("="  * 70)
+                        return
+                    elif job["status"] in [JobStatus.FAILED, JobStatus.TIMEOUT]:
+                        print(f"⚠ Test generation failed: {job.get('error')}")
+                        print("=" * 70)
+                        return
+
+        print("⚠ Test generation timed out")
+        print("=" * 70)
+
+    except Exception as e:
+        print(f"⚠ Test generation failed: {e}")
+        print("=" * 70)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("Starting Self-Managing HunyuanImage Worker (GPU 0)...")
@@ -701,6 +764,10 @@ async def lifespan(app: FastAPI):
     
     queue_processor_task = asyncio.create_task(process_job_queue())
     cleanup_task_instance = asyncio.create_task(cleanup_task())
+    
+    
+    # Run startup test in background
+    asyncio.create_task(run_startup_test())
     
     yield
     
@@ -1370,47 +1437,4 @@ async def root():
 
 
 if __name__ == "__main__":
-    # ==================== HARDCODED TEST GENERATION ====================
-    print("="*70)
-    print("RUNNING HUNYUAN TEST GENERATION")
-    print("="*70)
-
-    TEST_PROMPT = "A majestic black panther standing on a rocky cliff edge in a heroic brave position, muscles tensed, piercing golden eyes staring intensely forward, sleek fur glistening under dramatic sunset lighting, powerful stance with one paw raised, misty mountains in the background, cinematic composition, highly detailed, 8k quality"
-
-    try:
-        import asyncio
-        from datetime import datetime
-
-        # Create test output directory
-        test_output_dir = os.path.join(COMFYUI_PATH, "test_outputs")
-        os.makedirs(test_output_dir, exist_ok=True)
-
-        print(f"Test Prompt: {TEST_PROMPT[:80]}...")
-        print(f"Output Directory: {test_output_dir}")
-
-        # Create a minimal test request
-        test_request = {
-            "prompt": TEST_PROMPT,
-            "width": 1024,
-            "height": 1024,
-            "num_inference_steps": 20,
-            "guidance_scale": 3.5,
-            "seed": 42
-        }
-
-        # Run the generation (using the existing workflow queue_prompt function)
-        print("Generating test output...")
-        result = asyncio.run(queue_prompt(test_request))
-
-        print(f"✓ Hunyuan test generation completed successfully!")
-        print(f"✓ Output saved to: {test_output_dir}")
-
-    except Exception as e:
-        print(f"⚠ Test generation failed: {str(e)}")
-        print("Continuing to start server...")
-
-    print("="*70)
-    # ==================== END TEST GENERATION ====================
-
-
     uvicorn.run(app, host="0.0.0.0", port=9093, log_level="info")
