@@ -869,15 +869,15 @@ async def run_startup_test():
         img.save(buffered, format="PNG")
         img_base64 = base64.b64encode(buffered.getvalue()).decode()
 
-        # Create test request - NOTE: Using KontextImageGenerationRequest
+        # Create test request - NOTE: Using reference_image_base64 (with underscores!)
         test_request = KontextImageGenerationRequest(
             prompt=test_prompt,
             height=1024,
             width=1024,
             steps=25,
             seed=42,
-            referenceimagebase64=img_base64,
-            apikey="masterkey123"
+            reference_image_base64=img_base64,
+            api_key="masterkey123"
         )
 
         # Generate job ID
@@ -929,7 +929,6 @@ async def lifespan(app: FastAPI):
     queue_processor_task = asyncio.create_task(process_job_queue())
     cleanup_task_instance = asyncio.create_task(cleanup_task())
     stuck_job_monitor_task = asyncio.create_task(monitor_stuck_jobs())
-    
     
     # Run startup test in background
     asyncio.create_task(run_startup_test())
