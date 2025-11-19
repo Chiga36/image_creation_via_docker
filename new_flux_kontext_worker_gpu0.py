@@ -852,7 +852,7 @@ async def run_startup_test():
     try:
         await asyncio.sleep(5)  # Wait for server to be fully ready
 
-        test_prompt = "A majestic black panther standing on a rocky cliff edge in a heroic brave position, muscles tensed, piercing golden eyes staring intensely forward, wind blowing through its sleek black fur, dramatic cloudy sky background, cinematic lighting, photorealistic, 8k quality"
+        test_prompt = "A majestic black panther standing on a rocky cliff edge in a heroic brave position"
 
         print("=" * 70)
         print("RUNNING FLUX KONTEXT TEST GENERATION")
@@ -860,13 +860,23 @@ async def run_startup_test():
         print(f"Test Prompt: {test_prompt[:80]}...")
         print(f"Output Directory: {OUTPUT_DIR}")
 
-        # Create test request
-        test_request = ImageGenerationRequest(
+        # Create a simple reference image (black square)
+        from PIL import Image
+        import base64
+        import io
+        img = Image.new('RGB', (1024, 1024), color='black')
+        buffered = io.BytesIO()
+        img.save(buffered, format="PNG")
+        img_base64 = base64.b64encode(buffered.getvalue()).decode()
+
+        # Create test request - NOTE: Using KontextImageGenerationRequest
+        test_request = KontextImageGenerationRequest(
             prompt=test_prompt,
-            width=1024,
             height=1024,
-            steps=20,
+            width=1024,
+            steps=25,
             seed=42,
+            referenceimagebase64=img_base64,
             apikey="masterkey123"
         )
 
@@ -882,19 +892,19 @@ async def run_startup_test():
                 "created_at": datetime.now(),
                 "message": "Test generation"
             }
-            job_queue.append({"job_id": job_id, "request": test_request})
+            job_queue.append({"job_id": job_id, "request": test_request, "priority": "normal"})
 
         print("Generating test output...")
 
         # Wait for completion (max 5 minutes)
-        for _ in range(150):  # 150 * 2 = 300 seconds
+        for _ in range(150):  # 150 * 2 = 300 seconds = 5 minutes
             await asyncio.sleep(2)
             with job_lock:
                 if job_id in active_jobs:
                     job = active_jobs[job_id]
                     if job["status"] == JobStatus.COMPLETED:
                         print(f"✓ Test generation completed: {job.get('output_filename')}")
-                        print("="  * 70)
+                        print("=" * 70)
                         return
                     elif job["status"] in [JobStatus.FAILED, JobStatus.TIMEOUT]:
                         print(f"⚠ Test generation failed: {job.get('error')}")
