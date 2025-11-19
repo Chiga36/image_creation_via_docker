@@ -858,7 +858,9 @@ async def run_startup_test():
             img.save(tmp.name)
             test_image_path = tmp.name
 
-        # Create test request - NOTE: Using VideoGenerationRequest
+        print(f"Created test image: {test_image_path}")
+
+        # Create test request - Using VideoGenerationRequest
         test_request = VideoGenerationRequest(
             prompt=test_prompt,
             width=640,
@@ -907,6 +909,8 @@ async def run_startup_test():
 
     except Exception as e:
         print(f"⚠ Test generation failed: {e}")
+        import traceback
+        traceback.print_exc()
         print("=" * 70)
 
 
@@ -920,7 +924,6 @@ async def lifespan(app: FastAPI):
     queue_processor_task = asyncio.create_task(process_job_queue())
     cleanup_task_instance = asyncio.create_task(periodic_cleanup_task())
     stuck_job_monitor_task = asyncio.create_task(monitor_stuck_jobs())
-    
     
     # Run startup test in background
     asyncio.create_task(run_startup_test())
