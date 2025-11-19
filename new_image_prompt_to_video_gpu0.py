@@ -850,12 +850,22 @@ async def run_startup_test():
         print(f"Test Prompt: {test_prompt[:80]}...")
         print(f"Output Directory: {OUTPUT_DIR}")
 
-        # Create test request
-        test_request = ImageGenerationRequest(
+        # Create a simple black reference image for testing
+        import tempfile
+        from PIL import Image
+        img = Image.new('RGB', (640, 640), color='black')
+        with tempfile.NamedTemporaryFile(suffix='.png', delete=False, dir=TEMP_UPLOAD_DIR) as tmp:
+            img.save(tmp.name)
+            test_image_path = tmp.name
+
+        # Create test request - NOTE: Using VideoGenerationRequest
+        test_request = VideoGenerationRequest(
             prompt=test_prompt,
-            width=1024,
-            height=1024,
-            steps=20,
+            width=640,
+            height=640,
+            videolength=49,
+            framerate=24,
+            steps=4,
             seed=42,
             apikey="masterkey123"
         )
@@ -869,22 +879,23 @@ async def run_startup_test():
                 "job_id": job_id,
                 "status": JobStatus.QUEUED,
                 "request": test_request,
+                "input_image_path": test_image_path,
                 "created_at": datetime.now(),
                 "message": "Test generation"
             }
-            job_queue.append({"job_id": job_id, "request": test_request})
+            job_queue.append({"job_id": job_id, "request": test_request, "input_image_path": test_image_path})
 
         print("Generating test output...")
 
-        # Wait for completion (max 5 minutes)
-        for _ in range(150):  # 150 * 2 = 300 seconds
+        # Wait for completion (max 10 minutes for video)
+        for _ in range(300):  # 300 * 2 = 600 seconds = 10 minutes
             await asyncio.sleep(2)
             with job_lock:
                 if job_id in active_jobs:
                     job = active_jobs[job_id]
                     if job["status"] == JobStatus.COMPLETED:
-                        print(f"✓ Test generation completed: {job.get('output_filename')}")
-                        print("="  * 70)
+                        print(f"✓ Test video generation completed: {job.get('output_filename')}")
+                        print("=" * 70)
                         return
                     elif job["status"] in [JobStatus.FAILED, JobStatus.TIMEOUT]:
                         print(f"⚠ Test generation failed: {job.get('error')}")
