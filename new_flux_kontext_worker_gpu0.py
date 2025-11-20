@@ -869,7 +869,7 @@ async def run_startup_test():
         img.save(buffered, format="PNG")
         img_base64 = base64.b64encode(buffered.getvalue()).decode()
 
-        # Create test request - NOTE: Using reference_image_base64 (with underscores!)
+        # Create test request
         test_request = KontextImageGenerationRequest(
             prompt=test_prompt,
             height=1024,
