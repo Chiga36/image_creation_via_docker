@@ -44,8 +44,8 @@ RIFE_MODEL = os.environ.get("RIFE_CKPT", "rife47.pth")
 # Optional: Full paths for verification (not used by loaders)
 CLIP_MODEL_FULL_PATH = os.environ.get("CLIP_MODEL_FULL_PATH", "/home/comfyuser/ComfyUI/models/clip/umt5-xxl-encoder-Q5_K_M.gguf")
 VAE_MODEL_FULL_PATH = os.environ.get("VAE_MODEL_FULL_PATH", "/home/comfyuser/ComfyUI/models/vae/wan_2.1_vae.safetensors")
-UNET_HIGH_NOISE_FULL_PATH = os.environ.get("UNET_HIGH_NOISE_FULL_PATH", "/home/comfyuser/ComfyUI/models/unet/Wan2.2-I2V-A14B-HighNoise-Q3_K_S.gguf")
-UNET_LOW_NOISE_FULL_PATH = os.environ.get("UNET_LOW_NOISE_FULL_PATH", "/home/comfyuser/ComfyUI/models/unet/Wan2.2-I2V-A14B-LowNoise-Q3_K_S.gguf")
+UNET_HIGH_NOISE_FULL_PATH = os.environ.get("UNET_HIGH_NOISE_FULL_PATH", "/home/comfyuser/ComfyUI/models/unet/Wan2.2-I2V-A14B-HighNoise-Q3_K_M.gguf")
+UNET_LOW_NOISE_FULL_PATH = os.environ.get("UNET_LOW_NOISE_FULL_PATH", "/home/comfyuser/ComfyUI/models/unet/Wan2.2-I2V-A14B-LowNoise-Q3_K_M.gguf")
 LORA_HIGH_FULL_PATH = os.environ.get("LORA_HIGH_FULL_PATH", "/home/comfyuser/ComfyUI/models/loras/Wan2.2-Lightning_I2V-A14B-4steps-lora_HIGH_fp16.safetensors")
 LORA_LOW_FULL_PATH = os.environ.get("LORA_LOW_FULL_PATH", "/home/comfyuser/ComfyUI/models/loras/lightx2v_I2V_14B_480p_cfg_step_distill_rank64_bf16.safetensors")
 
@@ -576,7 +576,7 @@ def process_video_generation_job_sync(job_id: str, request: VideoGenerationReque
                 vaedecode = VAEDecode()
                 rife_vfi = NODE_CLASS_MAPPINGS["RIFE VFI"]()
                 vhs_videocombine = NODE_CLASS_MAPPINGS["VHS_VideoCombine"]()
-                easy_cleangpuused = NODE_CLASS_MAPPINGS["easy cleanGpuUsed"]()
+                # easy_cleangpuused = NODE_CLASS_MAPPINGS["easy cleanGpuUsed"]()  # Removed - node doesn't exist
                 
                 # Patch models
                 modelsamplingsd3_68 = modelsamplingsd3.patch(
